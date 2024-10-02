@@ -1,6 +1,5 @@
 # Node.js
 node_modules/
-index.js
 
 # Logs
 logs
@@ -25,3 +24,6 @@ logs
 
 # Environment variables
 .env*
+
+# JS files that were created from the typescript
+*.js
