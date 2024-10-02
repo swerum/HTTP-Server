@@ -32,6 +32,7 @@ async function createSocket(host : string, port : number) : Promise<net.Socket> 
     });
 }
 
+
 /** soInit sets up what happens to our promise in various events 
  * on data: resolve read with data. reset reader since the promise is resolved
  * on end: resolve with empty data buffer 
@@ -78,7 +79,7 @@ function read(conn: TCPConn): Promise<Buffer> {
             return;
         }
         if (conn.ended) {
-            resolve(Buffer.from(''));   // EOF
+            resolve(Buffer.from(''));   // signal for EOF
             return;
         }
 
