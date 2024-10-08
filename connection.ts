@@ -12,23 +12,23 @@ type TCPConn = {
     // the JS socket object
     socket: net.Socket;
     // from the 'error' event
-    err: null|Error;
+    err: null | Error;
     // EOF, from the 'end' event
     ended: boolean;
     // the callbacks of the promise of the current read
-    reader: null|{
+    reader: null | {
         resolve: (value: Buffer) => void,
         reject: (reason: Error) => void,
     };
 };
 
 //Create Server
-async function createSocket(host : string, port : number) : Promise<net.Socket> {
+async function createSocket(host: string, port: number): Promise<net.Socket> {
     return new Promise((resolve, reject) => {
         let server = net.createServer();
         server.on('connection', resolve);
         server.on('error', reject);
-        server.listen({host: host, port : port});
+        server.listen({ host: host, port: port });
     });
 }
 
@@ -84,7 +84,7 @@ function read(conn: TCPConn): Promise<Buffer> {
         }
 
         // save the promise callbacks
-        conn.reader = {resolve: resolve, reject: reject};
+        conn.reader = { resolve: resolve, reject: reject };
         // and resume the 'data' event to fulfill the promise later.
         conn.socket.resume();
     });
