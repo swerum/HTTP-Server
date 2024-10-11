@@ -36,10 +36,16 @@ export class DynamicBuffer {
             }
             return null;
         }
-        let header: Buffer = Buffer.from(data.subarray(0, newLineIndex + 1)); //allocates its own memory for the message
+        let header: Buffer = this.pop(newLineIndex + 1);
+        return header;
+    }
+
+    public pop(length: number): Buffer {
+        if (length > this.dataLength) { throw new Error("Trying to pop more data from Dynamic Buffer than is in it."); }
+        let header: Buffer = Buffer.from(this.buffer.subarray(0, length)); //allocates its own memory for the message
         //remove message from buffer
-        this.buffer.copyWithin(0, newLineIndex + 1, this.dataLength);
-        this.dataLength -= newLineIndex + 1;
+        this.buffer.copyWithin(0, length, this.dataLength);
+        this.dataLength -= length;
         return header;
     }
 

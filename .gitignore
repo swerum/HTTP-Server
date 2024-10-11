@@ -26,4 +26,5 @@ logs
 .env*
 
 # JS files that were created from the typescript
+dist
 *.js

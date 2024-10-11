@@ -1,6 +1,7 @@
 import * as net from "net";
 import * as Connection from "./Connection";
-import { DynamicBuffer } from "./dynamicBuffer";
+import * as HttpParsing from "./HttpParsing";
+import { DynamicBuffer } from "./DynamicBuffer";
 import { HTTPError } from "./HttpError";
 
 
@@ -9,8 +10,8 @@ async function serveClient(conn: Connection.TCPConn): Promise<void> {
     let dynamicBuffer: DynamicBuffer = new DynamicBuffer();
     while (true) {
         /** read header from socket */
-        let header: Buffer | null = dynamicBuffer.popHeader();;
-        while (header === null) {
+        let headerBuffer: Buffer | null = dynamicBuffer.popHeader();;
+        while (headerBuffer === null) {
             //read data
             const data = await Connection.read(conn);
             if (data.length === 0) { //EOF
@@ -22,9 +23,19 @@ async function serveClient(conn: Connection.TCPConn): Promise<void> {
             }
             //push data to dynamic buffer and check if it creates a message
             dynamicBuffer.push(data);
-            header = dynamicBuffer.popHeader();
+            headerBuffer = dynamicBuffer.popHeader();
         }
-
+        const req = HttpParsing.parseHTTPReq(headerBuffer);
+        // process the message and send the response
+        const reqBody: HttpParsing.BodyReader = HttpParsing.readerFromReq(conn, dynamicBuffer, req);
+        const res: HttpParsing.HTTPRes = await HttpParsing.handleReq(req, reqBody);
+        await HttpParsing.writeHTTPResp(conn, res);
+        // close the connection for HTTP/1.0
+        if (req.version === '1.0') {
+            return;
+        }
+        // make sure that the request body is consumed completely
+        while ((await reqBody.read()).length > 0) { /* empty */ }
     }
 }
 
