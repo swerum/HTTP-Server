@@ -25,6 +25,7 @@ async function serveClient(conn: Connection.TCPConn): Promise<void> {
             dynamicBuffer.push(data);
             headerBuffer = dynamicBuffer.popHeader();
         }
+        // console.log(headerBuffer.toString());
         const req = HttpParsing.parseHTTPReq(headerBuffer);
         // process the message and send the response
         const reqBody: HttpParsing.BodyReader = HttpParsing.readerFromReq(conn, dynamicBuffer, req);

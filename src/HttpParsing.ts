@@ -43,31 +43,32 @@ function splitBuffer(buffer: Buffer, delimiter: string): Buffer[] {
     while (remainingLines.length > 0) {
         let indexOfDelimiter = remainingLines.indexOf(delimiter);
         /** If no more deliminator, last line is the rest of the buffer */
-        if (indexOfDelimiter === -1) { indexOfDelimiter = remainingLines.length - 1; }
-        let line: Buffer = Buffer.from(remainingLines.subarray(0, indexOfDelimiter + 1));
+        if (indexOfDelimiter === -1) { indexOfDelimiter = remainingLines.length; }
+        let line: Buffer = Buffer.from(remainingLines.subarray(0, indexOfDelimiter));
         lines.push(line);
         // start = indexOfDelimiter + 1;
-        remainingLines = remainingLines.subarray(indexOfDelimiter + 1, remainingLines.length);
+        remainingLines = remainingLines.subarray(indexOfDelimiter + delimiter.length, remainingLines.length);
     }
     return lines;
 }
 
 function parseHeaderField(line: Buffer): string[] | null {
     /** ends in a new line */
-    if (line.indexOf('\n') !== line.length - 1) return null;
+    // if (line.indexOf('\n') !== line.length - 1) return null;
     let parsedLine: Buffer[] = splitBuffer(line, ':');
-    if (parsedLine.length !== 2) return null;
+    if (parsedLine.length < 2) return null;
     return [parsedLine[0].toString('latin1'), parsedLine[1].toString('latin1').substring(1)];
 }
 
 function parseHTTPReq(data: Buffer): HTTPReq {
     // split the data into lines
-    const lines: Buffer[] = splitBuffer(data, '\n');
+    console.log(JSON.stringify(data.toString()));
+    const lines: Buffer[] = splitBuffer(data, '\r\n');
     // the first line is `METHOD URI VERSION`
     const [method, uri, version]: Buffer[] = splitBuffer(lines[0], ' '); /** split line by spaces */
     // followed by header fields in the format of `Name: value`
     const headers: Map<string, string> = new Map();
-    for (let i = 1; i < lines.length - 1; i++) {
+    for (let i = 1; i < lines.length - 2; i++) {
         const h = Buffer.from(lines[i]);    // copy
         let parsedLine: string[] | null = parseHeaderField(h);
         if (parsedLine === null) {
@@ -182,8 +183,13 @@ async function handleReq(req: HTTPReq, body: BodyReader): Promise<HTTPRes> {
 
 function encodeHTTPResp(resp: HTTPRes): Buffer {
     let buff = new DynamicBuffer();
-    let line: string = "HTTP/2.0 " + resp.code + " HELLO WORLD";
+    let line: string = "HTTP/2.0 " + resp.code + " REASON\r\n";
     buff.push(Buffer.from(line));
+    resp.headers.forEach(headerLine => {
+        buff.push(headerLine);
+        buff.push(Buffer.from("\r\n"));
+    });
+    buff.push(Buffer.from("\r\n"));
     return buff.pop(buff.dataLength);
 }
 async function writeHTTPResp(conn: Connection.TCPConn, resp: HTTPRes): Promise<void> {
@@ -193,7 +199,9 @@ async function writeHTTPResp(conn: Connection.TCPConn, resp: HTTPRes): Promise<v
     // set the "Content-Length" field
     resp.headers.push(Buffer.from(`Content-Length: ${resp.body.length}`));
     // write the header
-    await Connection.write(conn, encodeHTTPResp(resp));
+    let responseBuffer: Buffer = encodeHTTPResp(resp);
+    await Connection.write(conn, responseBuffer);
+
     // write the body
     while (true) {
         const data = await resp.body.read();
