@@ -12,7 +12,6 @@ export class DynamicBuffer {
     constructor() { this.buffer = Buffer.alloc(0); }
 
     public push(newData: Buffer) {
-        // console.log(newData.toString());
         let newDataLength = newData.length + this.dataLength;
         //if buffer is too small, resize it 
         if (newDataLength > this.buffer.length) {
@@ -38,7 +37,6 @@ export class DynamicBuffer {
             return null;
         }
         let header: Buffer = this.pop(newLineIndex + 4);
-        // console.log(JSON.stringify(header.toString()));
         return header;
     }
 

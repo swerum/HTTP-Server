@@ -3,7 +3,6 @@ import * as net from "net";
 export {
     TCPConn,
     createConnection,
-    createSocket,
     read,
     write
 }
@@ -21,17 +20,6 @@ type TCPConn = {
         reject: (reason: Error) => void,
     };
 };
-
-//Create Server
-async function createSocket(host: string, port: number): Promise<net.Socket> {
-    return new Promise((resolve, reject) => {
-        let server = net.createServer();
-        server.on('connection', resolve);
-        server.on('error', reject);
-        server.listen({ host: host, port: port });
-    });
-}
-
 
 /** soInit sets up what happens to our promise in various events 
  * on data: resolve read with data. reset reader since the promise is resolved

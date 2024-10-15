@@ -25,7 +25,6 @@ async function serveClient(conn: Connection.TCPConn): Promise<void> {
             dynamicBuffer.push(data);
             headerBuffer = dynamicBuffer.popHeader();
         }
-        // console.log(headerBuffer.toString());
         const req = HttpParsing.parseHTTPReq(headerBuffer);
         // process the message and send the response
         const reqBody: HttpParsing.BodyReader = HttpParsing.readerFromReq(conn, dynamicBuffer, req);
@@ -37,20 +36,23 @@ async function serveClient(conn: Connection.TCPConn): Promise<void> {
         }
         // make sure that the request body is consumed completely
         while ((await reqBody.read()).length > 0) { /* empty */ }
+        return;
     }
 }
 
 
-async function init(): Promise<void> {
-    let socket: net.Socket = await Connection.createSocket('127.0.0.1', 1234);
+async function init(socket: net.Socket): Promise<void> {
     let conn: Connection.TCPConn = Connection.createConnection(socket);
     try {
         await serveClient(conn);
     } catch (exc) {
         console.error('exception:', exc);
     } finally {
-        conn.socket.destroy(); false;
+        conn.socket.destroy();
     }
 }
 
-init();
+let server = net.createServer();
+server.on('connection', init);
+server.on('error', (err: Error) => { throw err; });
+server.listen({ host: '127.0.0.1', port: 1234 });

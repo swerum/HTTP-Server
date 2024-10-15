@@ -62,7 +62,6 @@ function parseHeaderField(line: Buffer): string[] | null {
 
 function parseHTTPReq(data: Buffer): HTTPReq {
     // split the data into lines
-    console.log(JSON.stringify(data.toString()));
     const lines: Buffer[] = splitBuffer(data, '\r\n');
     // the first line is `METHOD URI VERSION`
     const [method, uri, version]: Buffer[] = splitBuffer(lines[0], ' '); /** split line by spaces */
@@ -113,7 +112,7 @@ function readerFromConnLength(
 
 /** Checks Content Length and throws and error if there should not be a body
  * Checks encoding type and throws an error if it's chunked or body length is unspecified */
-function readerFromReq(conn: Connection.TCPConn, buf: DynamicBuffer, req: HTTPReq): BodyReader {
+function readerFromReq(conn: Connection.TCPConn, dynamicBuffer: DynamicBuffer, req: HTTPReq): BodyReader {
     let bodyLen = -1;
     const contentLen = req.headers.get('Content-Length');
     if (contentLen) {
@@ -134,7 +133,7 @@ function readerFromReq(conn: Connection.TCPConn, buf: DynamicBuffer, req: HTTPRe
 
     if (bodyLen >= 0) {
         // "Content-Length" is present
-        return readerFromConnLength(conn, buf, bodyLen);
+        return readerFromConnLength(conn, dynamicBuffer, bodyLen);
     } else if (chunked) {
         // chunked encoding
         throw new HTTPError(501, 'This server does not support chunked encoding.');
